@@ -20,7 +20,7 @@ type parser struct {
 }
 
 func (p *parser) recvMsg() (msg []byte, err error) {
-	if _, err := p.r.Read(p.header[:]); err != nil {
+	if _, err := io.ReadFull(p.r, p.header[:]); err != nil {
 		return nil, err
 	}
 
@@ -30,7 +30,7 @@ func (p *parser) recvMsg() (msg []byte, err error) {
 	}
 
 	msg = make([]byte, int(length))
-	if _, err := p.r.Read(msg); err != nil {
+	if _, err := io.ReadFull(p.r, msg); err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
 		}
@@ -50,7 +50,7 @@ func encode(c Codec, msg interface{}) ([]byte, error) {
 		b, err = c.Marshal(msg)
 		if err != nil {
 			// TODO(sgc): should return error with status code "internal"
-			return nil, status.Errorf(codes.Internal, "rpc: failed to unmarshal received message %v", err)
+			return nil, status.Errorf(codes.Internal, "rpc: error while marshaling %v", err)
 		}
 		length = uint(len(b))
 	}
