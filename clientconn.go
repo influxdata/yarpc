@@ -43,7 +43,8 @@ func DialContext(ctx context.Context, addr string, opts ...DialOption) (*ClientC
 	if err != nil {
 		return nil, err
 	}
-	cc := &ClientConn{ctx: ctx, s: s}
+	cc := &ClientConn{s: s}
+	cc.ctx, cc.cancel = context.WithCancel(ctx)
 
 	for _, opt := range opts {
 		opt(&cc.dopts)
@@ -62,12 +63,18 @@ func DialContext(ctx context.Context, addr string, opts ...DialOption) (*ClientC
 }
 
 type ClientConn struct {
-	ctx   context.Context
-	s     *yamux.Session
-	dopts dialOptions
-	log   zap.Logger
+	ctx    context.Context
+	cancel context.CancelFunc
+	s      *yamux.Session
+	dopts  dialOptions
+	log    zap.Logger
 }
 
 func (cc *ClientConn) NewStream() (*yamux.Stream, error) {
 	return cc.s.OpenStream()
+}
+
+func (cc *ClientConn) Close() error {
+	cc.cancel()
+	return cc.s.Close()
 }

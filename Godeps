@@ -1,2 +1,4 @@
+github.com/gogo/protobuf 15e5f49f11b8f01e78c402755dfdb51088f3b253
+github.com/hashicorp/yamux d1caa6c97c9fc1cc9e83bbe34d0603f9ff0ce8bd
 github.com/uber-go/atomic 74ca5ec650841aee9f289dce76e928313a37cbc6
 github.com/uber-go/zap fbae0281ffd546fa6d1959fec6075ac5da7fb577
