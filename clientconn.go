@@ -7,12 +7,10 @@ import (
 
 	"github.com/gogo/protobuf/codec"
 	"github.com/hashicorp/yamux"
-	"github.com/uber-go/zap"
 )
 
 type dialOptions struct {
 	codec Codec
-	log   zap.Logger
 }
 
 type DialOption func(*dialOptions)
@@ -20,12 +18,6 @@ type DialOption func(*dialOptions)
 func WithCodec(c Codec) DialOption {
 	return func(o *dialOptions) {
 		o.codec = c
-	}
-}
-
-func WithLogger(l zap.Logger) DialOption {
-	return func(o *dialOptions) {
-		o.log = l
 	}
 }
 
@@ -55,10 +47,6 @@ func DialContext(ctx context.Context, addr string, opts ...DialOption) (*ClientC
 		cc.dopts.codec = codec.New(1024)
 	}
 
-	if cc.dopts.log == nil {
-		cc.dopts.log = zap.New(zap.NullEncoder())
-	}
-
 	return cc, nil
 }
 
@@ -67,7 +55,6 @@ type ClientConn struct {
 	cancel context.CancelFunc
 	s      *yamux.Session
 	dopts  dialOptions
-	log    zap.Logger
 }
 
 func (cc *ClientConn) NewStream() (*yamux.Stream, error) {

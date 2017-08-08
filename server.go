@@ -8,14 +8,12 @@ import (
 
 	"context"
 
-	"fmt"
 	"reflect"
 
 	"github.com/gogo/protobuf/codec"
 	"github.com/hashicorp/yamux"
 	"github.com/influxdata/yarpc/codes"
 	"github.com/influxdata/yarpc/status"
-	"github.com/uber-go/zap"
 )
 
 type methodHandler func(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error)
@@ -53,7 +51,6 @@ type Server struct {
 
 type options struct {
 	codec Codec
-	log   zap.Logger
 }
 
 type ServerOption func(*options)
@@ -61,12 +58,6 @@ type ServerOption func(*options)
 func CustomCodec(c Codec) ServerOption {
 	return func(o *options) {
 		o.codec = c
-	}
-}
-
-func ServerLogger(l zap.Logger) ServerOption {
-	return func(o *options) {
-		o.log = l
 	}
 }
 
@@ -80,10 +71,6 @@ func NewServer(opts ...ServerOption) *Server {
 	}
 
 	// defaults
-	if s.opts.log == nil {
-		s.opts.log = zap.New(zap.NullEncoder())
-	}
-
 	if s.opts.codec == nil {
 		// TODO(sgc): codec is not safe for concurrent access
 		s.opts.codec = codec.New(1024)
@@ -99,18 +86,18 @@ func (s *Server) RegisterService(sd *ServiceDesc, ss interface{}) {
 	ht := reflect.TypeOf(sd.HandlerType).Elem()
 	st := reflect.TypeOf(ss)
 	if !st.Implements(ht) {
-		s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found the handler of type %v that does not satisfy %v", st, ht))
+		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found the handler of type %v that does not satisfy %v", st, ht))
 	}
 	s.register(sd, ss)
 }
 
 func (s *Server) register(sd *ServiceDesc, ss interface{}) {
-	s.opts.log.Info("register service", zap.String("name", sd.ServiceName), zap.Uint("index", uint(sd.Index)))
+	// s.opts.log.Info("register service", zap.String("name", sd.ServiceName), zap.Uint("index", uint(sd.Index)))
 	if s.serve {
-		s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService after Server.Serve for %q", sd.ServiceName))
+		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService after Server.Serve for %q", sd.ServiceName))
 	}
 	if _, ok := s.m[sd.Index]; ok {
-		s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found duplicate service registration for %q", sd.ServiceName))
+		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found duplicate service registration for %q", sd.ServiceName))
 	}
 
 	srv := &service{
@@ -156,7 +143,7 @@ func (s *Server) Stop() {
 func (s *Server) handleRawConn(rawConn net.Conn) {
 	session, err := yamux.Server(rawConn, nil)
 	if err != nil {
-		s.opts.log.Error("yamux.Server failed", zap.Error(err))
+		// s.opts.log.Error("yamux.Server failed", zap.Error(err))
 		rawConn.Close()
 		return
 	}
@@ -169,7 +156,7 @@ func (s *Server) serveSession(session *yamux.Session) {
 		stream, err := session.AcceptStream()
 		if err != nil {
 			// TODO(sgc): handle session errors
-			s.opts.log.Error("session.AcceptStream failed", zap.Error(err))
+			// s.opts.log.Error("session.AcceptStream failed", zap.Error(err))
 			session.Close()
 			return
 		}
@@ -195,7 +182,7 @@ func (s *Server) handleStream(st *yamux.Stream) {
 	srv, ok := s.m[service]
 	if !ok {
 		// TODO(sgc): handle unknown service
-		s.opts.log.Info("invalid service identifier", zap.Uint("service", uint(service)))
+		// s.opts.log.Info("invalid service identifier", zap.Uint("service", uint(service)))
 		return
 	}
 
@@ -212,7 +199,7 @@ func (s *Server) handleStream(st *yamux.Stream) {
 	}
 
 	// TODO(sgc): handle unknown method
-	s.opts.log.Info("invalid method identifier", zap.Uint("service", uint(service)), zap.Uint("method", uint(method)))
+	// s.opts.log.Info("invalid method identifier", zap.Uint("service", uint(service)), zap.Uint("method", uint(method)))
 }
 
 func (s *Server) handleStreamingRPC(st *yamux.Stream, srv *service, sd *StreamDesc) {
@@ -231,7 +218,7 @@ func (s *Server) handleStreamingRPC(st *yamux.Stream, srv *service, sd *StreamDe
 	appErr = sd.Handler(server, ss)
 	if appErr != nil {
 		// TODO(sgc): handle app error using similar code style to gRPC
-		s.opts.log.Error("sd.Handler failed", zap.Error(appErr))
+		// s.opts.log.Error("sd.Handler failed", zap.Error(appErr))
 		// appStatus, ok := status.FromError(appErr)
 		return
 	}
@@ -290,7 +277,7 @@ func (s *Server) handleUnaryRPC(st *yamux.Stream, srv *service, md *MethodDesc) 
 func (s *Server) sendResponse(stream *yamux.Stream, msg interface{}) error {
 	buf, err := encode(s.opts.codec, msg)
 	if err != nil {
-		s.opts.log.Error("rpc: server failed to encode reply", zap.Error(err))
+		// s.opts.log.Error("rpc: server failed to encode reply", zap.Error(err))
 		return err
 	}
 

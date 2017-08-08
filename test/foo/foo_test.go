@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"testing"
 
 	"github.com/influxdata/yarpc"
-	"github.com/uber-go/zap"
 )
 
 type fooTestServer struct {
@@ -29,15 +27,14 @@ func (f *fooTestServer) ServerStreamMethod(in *Request, stm Foo_ServerStreamMeth
 	return nil
 }
 
-func makeServer(t testing.TB) (l net.Listener, s *yarpc.Server, addr string, log zap.Logger) {
+func makeServer(t testing.TB) (l net.Listener, s *yarpc.Server, addr string) {
 	var err error
 	l, err = net.Listen("tcp", ":4040")
 	if err != nil {
 		t.Fatal("couldn't start listener", err)
 	}
 
-	log = zap.New(zap.NewTextEncoder(), zap.Output(os.Stderr))
-	s = yarpc.NewServer(yarpc.CustomCodec(&fooCodec{}), yarpc.ServerLogger(log))
+	s = yarpc.NewServer(yarpc.CustomCodec(&fooCodec{}))
 	RegisterFooServer(s, &fooTestServer{})
 
 	addr = l.Addr().String()
@@ -45,14 +42,14 @@ func makeServer(t testing.TB) (l net.Listener, s *yarpc.Server, addr string, log
 }
 
 func TestFooClient_UnaryMethod(t *testing.T) {
-	l, s, _, log := makeServer(t)
+	l, s, _ := makeServer(t)
 
 	go func() {
 		s.Serve(l)
 	}()
 	defer s.Stop()
 
-	cc, err := yarpc.Dial(":4040", yarpc.WithCodec(&fooCodec{}), yarpc.WithLogger(log))
+	cc, err := yarpc.Dial(":4040", yarpc.WithCodec(&fooCodec{}))
 	if err != nil {
 		t.Fatal("couldn't dial server", err)
 	}
