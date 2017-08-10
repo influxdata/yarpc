@@ -15,6 +15,7 @@ package foo
 
 import (
 	context "context"
+
 	yarpc "github.com/influxdata/yarpc"
 )
 

@@ -10,6 +10,8 @@ import (
 
 	"reflect"
 
+	"log"
+
 	"github.com/gogo/protobuf/codec"
 	"github.com/hashicorp/yamux"
 	"github.com/influxdata/yarpc/codes"
@@ -86,7 +88,7 @@ func (s *Server) RegisterService(sd *ServiceDesc, ss interface{}) {
 	ht := reflect.TypeOf(sd.HandlerType).Elem()
 	st := reflect.TypeOf(ss)
 	if !st.Implements(ht) {
-		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found the handler of type %v that does not satisfy %v", st, ht))
+		log.Fatalf("rpc: Server.RegisterService found the handler of type %v that does not satisfy %v", st, ht)
 	}
 	s.register(sd, ss)
 }
@@ -94,10 +96,10 @@ func (s *Server) RegisterService(sd *ServiceDesc, ss interface{}) {
 func (s *Server) register(sd *ServiceDesc, ss interface{}) {
 	// s.opts.log.Info("register service", zap.String("name", sd.ServiceName), zap.Uint("index", uint(sd.Index)))
 	if s.serve {
-		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService after Server.Serve for %q", sd.ServiceName))
+		log.Fatalf("rpc: Server.RegisterService after Server.Serve for %q", sd.ServiceName)
 	}
 	if _, ok := s.m[sd.Index]; ok {
-		// s.opts.log.Fatal(fmt.Sprintf("rpc: Server.RegisterService found duplicate service registration for %q", sd.ServiceName))
+		log.Fatalf("rpc: Server.RegisterService found duplicate service registration for %q", sd.ServiceName)
 	}
 
 	srv := &service{
@@ -143,7 +145,7 @@ func (s *Server) Stop() {
 func (s *Server) handleRawConn(rawConn net.Conn) {
 	session, err := yamux.Server(rawConn, nil)
 	if err != nil {
-		// s.opts.log.Error("yamux.Server failed", zap.Error(err))
+		log.Printf("ERR yamux.Server failed: error=%v", err)
 		rawConn.Close()
 		return
 	}
@@ -156,7 +158,7 @@ func (s *Server) serveSession(session *yamux.Session) {
 		stream, err := session.AcceptStream()
 		if err != nil {
 			// TODO(sgc): handle session errors
-			// s.opts.log.Error("session.AcceptStream failed", zap.Error(err))
+			log.Printf("ERR session.AcceptStream failed: error=%v", err)
 			session.Close()
 			return
 		}
@@ -182,7 +184,7 @@ func (s *Server) handleStream(st *yamux.Stream) {
 	srv, ok := s.m[service]
 	if !ok {
 		// TODO(sgc): handle unknown service
-		// s.opts.log.Info("invalid service identifier", zap.Uint("service", uint(service)))
+		log.Printf("invalid service identifier: service=%d", service)
 		return
 	}
 
@@ -199,7 +201,7 @@ func (s *Server) handleStream(st *yamux.Stream) {
 	}
 
 	// TODO(sgc): handle unknown method
-	// s.opts.log.Info("invalid method identifier", zap.Uint("service", uint(service)), zap.Uint("method", uint(method)))
+	log.Printf("ERR invalid method identifier: service=%d method=%d", service, method)
 }
 
 func (s *Server) handleStreamingRPC(st *yamux.Stream, srv *service, sd *StreamDesc) {
@@ -218,7 +220,7 @@ func (s *Server) handleStreamingRPC(st *yamux.Stream, srv *service, sd *StreamDe
 	appErr = sd.Handler(server, ss)
 	if appErr != nil {
 		// TODO(sgc): handle app error using similar code style to gRPC
-		// s.opts.log.Error("sd.Handler failed", zap.Error(appErr))
+		log.Printf("ERR sd.Handler failed: error=%v", appErr)
 		// appStatus, ok := status.FromError(appErr)
 		return
 	}
