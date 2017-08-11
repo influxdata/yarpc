@@ -157,9 +157,11 @@ func (s *Server) serveSession(session *yamux.Session) {
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
-			// TODO(sgc): handle session errors
-			log.Printf("ERR session.AcceptStream failed: error=%v", err)
-			session.Close()
+			if err != io.EOF {
+				// TODO(sgc): handle session errors
+				log.Printf("ERR session.AcceptStream failed: error=%v", err)
+				session.Close()
+			}
 			return
 		}
 
