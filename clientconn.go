@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/codec"
-	"github.com/hashicorp/yamux"
+	"github.com/influxdata/yamux"
 )
 
 type dialOptions struct {

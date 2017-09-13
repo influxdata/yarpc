@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/hashicorp/yamux"
+	"github.com/influxdata/yamux"
 )
 
 func Invoke(ctx context.Context, api uint16, args interface{}, reply interface{}, cc *ClientConn) error {

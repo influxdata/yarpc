@@ -13,7 +13,7 @@ import (
 	"log"
 
 	"github.com/gogo/protobuf/codec"
-	"github.com/hashicorp/yamux"
+	"github.com/influxdata/yamux"
 	"github.com/influxdata/yarpc/codes"
 	"github.com/influxdata/yarpc/status"
 )

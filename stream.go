@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/hashicorp/yamux"
+	"github.com/influxdata/yamux"
 	"github.com/influxdata/yarpc/codes"
 	"github.com/influxdata/yarpc/status"
 )
