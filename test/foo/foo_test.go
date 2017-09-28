@@ -64,7 +64,7 @@ func TestFooClient_UnaryMethod(t *testing.T) {
 }
 
 func TestFooClient_ServerStreamMethod(t *testing.T) {
-	l, s, _, log := makeServer(t)
+	l, s, _ := makeServer(t)
 
 	go func() {
 		s.Serve(l)
@@ -72,7 +72,7 @@ func TestFooClient_ServerStreamMethod(t *testing.T) {
 
 	defer s.Stop()
 
-	cc, err := yarpc.Dial(":4040", yarpc.WithCodec(&fooCodec{}), yarpc.WithLogger(log))
+	cc, err := yarpc.Dial(":4040", yarpc.WithCodec(&fooCodec{}))
 	if err != nil {
 		t.Fatal("couldn't dial server", err)
 	}
