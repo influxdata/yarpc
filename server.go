@@ -12,7 +12,6 @@ import (
 
 	"log"
 
-	"github.com/gogo/protobuf/codec"
 	"github.com/influxdata/yamux"
 	"github.com/influxdata/yarpc/codes"
 	"github.com/influxdata/yarpc/status"
@@ -74,8 +73,7 @@ func NewServer(opts ...ServerOption) *Server {
 
 	// defaults
 	if s.opts.codec == nil {
-		// TODO(sgc): codec is not safe for concurrent access
-		s.opts.codec = codec.New(1024)
+		s.opts.codec = NewCodec()
 	}
 
 	return s

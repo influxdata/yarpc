@@ -5,7 +5,6 @@ import (
 
 	"context"
 
-	"github.com/gogo/protobuf/codec"
 	"github.com/influxdata/yamux"
 )
 
@@ -43,8 +42,7 @@ func DialContext(ctx context.Context, addr string, opts ...DialOption) (*ClientC
 	}
 
 	if cc.dopts.codec == nil {
-		// TODO(sgc): codec is not safe for concurrent access
-		cc.dopts.codec = codec.New(1024)
+		cc.dopts.codec = NewCodec()
 	}
 
 	return cc, nil

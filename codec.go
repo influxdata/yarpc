@@ -3,11 +3,47 @@ package yarpc
 import (
 	"encoding/binary"
 	"io"
+	"sync"
 
+	"github.com/gogo/protobuf/codec"
 	"github.com/influxdata/yamux"
 	"github.com/influxdata/yarpc/codes"
 	"github.com/influxdata/yarpc/status"
 )
+
+var (
+	codecPool = &sync.Pool{
+		New: func() interface{} {
+			return codec.New(1024)
+		},
+	}
+)
+
+type pooledCodec struct{}
+
+var (
+	cd = &pooledCodec{}
+)
+
+func NewCodec() Codec {
+	return cd
+}
+
+func (*pooledCodec) Marshal(v interface{}) ([]byte, error) {
+	ci := codecPool.Get()
+	c := ci.(codec.Codec)
+	data, err := c.Marshal(v)
+	codecPool.Put(ci)
+	return data, err
+}
+
+func (*pooledCodec) Unmarshal(data []byte, v interface{}) error {
+	ci := codecPool.Get()
+	c := ci.(codec.Codec)
+	err := c.Unmarshal(data, v)
+	codecPool.Put(ci)
+	return err
+}
 
 type Codec interface {
 	Marshal(v interface{}) ([]byte, error)
