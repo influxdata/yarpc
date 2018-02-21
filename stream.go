@@ -3,6 +3,7 @@ package yarpc
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"io"
 
 	"github.com/influxdata/yamux"
@@ -67,11 +68,20 @@ func NewClientStream(ctx context.Context, desc *StreamDesc, cc *ClientConn, api 
 	}
 
 	cs := &clientStream{
-		cn:    cn,
-		codec: cc.dopts.codec,
-		p:     &parser{r: cn},
-		desc:  desc,
+		cn:      cn,
+		codec:   cc.dopts.codec,
+		p:       &parser{r: cn},
+		desc:    desc,
+		ctx:     ctx,
+		closing: make(chan struct{}),
 	}
+	go func() {
+		select {
+		case <-ctx.Done():
+			cs.CloseSend()
+		case <-cs.closing:
+		}
+	}()
 
 	return cs, nil
 }
@@ -81,17 +91,30 @@ type clientStream struct {
 	codec Codec
 	p     *parser
 	desc  *StreamDesc
+
+	ctx     context.Context
+	closing chan struct{}
 }
 
 func (c *clientStream) CloseSend() error {
+	select {
+	case <-c.closing:
+	default:
+		close(c.closing)
+	}
 	return c.cn.Close()
 }
 
 func (c *clientStream) Context() context.Context {
-	panic("implement me")
+	return c.ctx
 }
 
 func (c *clientStream) SendMsg(m interface{}) error {
+	select {
+	case <-c.closing:
+		return errors.New("stream closed")
+	default:
+	}
 	out, err := encode(c.codec, m)
 	if err != nil {
 		return err
@@ -102,6 +125,11 @@ func (c *clientStream) SendMsg(m interface{}) error {
 }
 
 func (c *clientStream) RecvMsg(m interface{}) error {
+	select {
+	case <-c.closing:
+		return errors.New("stream closed")
+	default:
+	}
 	err := decode(c.p, c.codec, c.cn, m)
 	if err == nil {
 		if !c.desc.ClientStreams || c.desc.ServerStreams {
