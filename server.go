@@ -2,6 +2,7 @@ package yarpc
 
 import (
 	"net"
+	"sync"
 
 	"encoding/binary"
 	"io"
@@ -48,6 +49,7 @@ type Server struct {
 	m     map[uint8]*service
 	serve bool
 	lis   net.Listener
+	lisMu sync.Mutex
 }
 
 type options struct {
@@ -117,7 +119,10 @@ func (s *Server) register(sd *ServiceDesc, ss interface{}) {
 }
 
 func (s *Server) Serve(lis net.Listener) error {
+	s.lisMu.Lock()
 	s.lis = lis
+	s.lisMu.Unlock()
+
 	for {
 		rawConn, err := lis.Accept()
 		if err != nil {
@@ -134,6 +139,9 @@ func (s *Server) Serve(lis net.Listener) error {
 }
 
 func (s *Server) Stop() {
+	s.lisMu.Lock()
+	defer s.lisMu.Unlock()
+
 	if s.lis != nil {
 		s.lis.Close()
 		s.lis = nil
