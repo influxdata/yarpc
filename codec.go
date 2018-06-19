@@ -33,8 +33,10 @@ func (*pooledCodec) Marshal(v interface{}) ([]byte, error) {
 	ci := codecPool.Get()
 	c := ci.(codec.Codec)
 	data, err := c.Marshal(v)
+	// To avoid a data race, create a copy of data before we return the codec to the pool.
+	dataCopy := append([]byte(nil), data...)
 	codecPool.Put(ci)
-	return data, err
+	return dataCopy, err
 }
 
 func (*pooledCodec) Unmarshal(data []byte, v interface{}) error {
